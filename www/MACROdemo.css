@@ -1,4 +1,4 @@
-.box.box-solid.box-primary>.box-header {
+/* .box.box-solid.box-primary>.box-header {
   color:#ffffff;
   background:#5900b3
                     }
@@ -10,3 +10,7 @@ border-right-color:#5900b3;
 border-top-color:#5900b3;
 }
 
+body {
+  font-family: arial, helvetica, sans-serif;
+}
+*/

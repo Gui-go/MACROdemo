@@ -60,6 +60,7 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    
 
     includeCSS("www/MACROdemo.css"),
 
