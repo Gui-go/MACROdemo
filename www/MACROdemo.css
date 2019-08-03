@@ -1,16 +1,26 @@
-/* .box.box-solid.box-primary>.box-header {
-  color:#ffffff;
-  background:#5900b3
-                    }
-
-.box.box-solid.box-primary{
-border-bottom-color:#5900b3;
-border-left-color:#5900b3;
-border-right-color:#5900b3;
-border-top-color:#5900b3;
-}
 
 body {
   font-family: arial, helvetica, sans-serif;
+    height: 8px;
+    top: 25px;
+    border-top: 1px solid #FFF;
+    border-bottom: 1px solid #FFF;
+    background: #11Fabc;
+}
+
+.irs-bar {
+    height: 8px;
+    top: 25px;
+    border-top: 1px solid #FFF;
+    border-bottom: 1px solid #FFF;
+    background: #11Fabc;
+}
+
+/*.irs-bar {
+    height: 8px;
+    top: 25px;
+    border-top: 1px solid #;
+    border-bottom: 1px solid #;
+    background: #;
 }
 */

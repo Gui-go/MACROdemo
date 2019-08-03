@@ -1,11 +1,30 @@
-library("shiny")
-library("shinythemes")
-library("shinyWidgets")
+rm(list = ls())
 
+# Libraries ---------------------------------------------------------------
+
+library("shiny")
+library("shinydashboard")
+library("shinythemes")
+library("shinyWidgets")  
+library("tidyverse")
+library("ggplot2")
+library("plotly")
+library("Quandl")
+library("forecast")
+library("tseries")
+library("ggfortify")
+library("moments")
+library("rsconnect")
+library("devtools")
+library("DT")
+library("packrat")
+library("httr")
+library("RCurl")
 
 
 ui <- shinyUI(
     navbarPage("MACROdemo",
+               tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "MACROdemo.css")),
                tabPanel("Apresentação",
                         br(),
                         br(),
@@ -80,48 +99,60 @@ ui <- shinyUI(
                           tabPanel("Panel_M3"),
                           tabPanel("Panel_M4")),
                tabPanel("Observatório",
-                        column(2,
-                               selectInput(
-                                   inputId = "SOB",
-                                   label = "Série:",
-                                   choices = c("SELIC" = 4390,
-                                               "CDI" = 4391,
-                                               "IPCA" = 433,
-                                               "INPC" = 188),
-                                   selected = "SELIC"
-                               ),
-                               br(),
-                               selectInput("MARKOB", "Marcadores:",
-                                           multiple = T,
-                                           selectize = T,
-                                           c("Média" = "m1",
-                                             "Mediana" = "m2"),
-                                           selected = c("m1", "m2")),
-                               br(),
-                               sliderInput(
-                                   inputId = "SLDOB",
-                                   label = "Período da série:",
-                                   value = c(164, 392), min = 1 , max = 500, step = 1
-                               ),
-                               br(),
-                               tableOutput("PIFOB")
-                               ),
-                        column(10,
-                               tabsetPanel(
-                                   tabPanel(
-                                       "Gráfico de linha",
-                                       plotlyOutput("GLOB", height = "800px")),
-                                   tabPanel(
-                                       "Gráfico de linhas",
-                                       plotlyOutput("GLOBS", height = "800px")),
-                                   tabPanel(
-                                       "OUTROS",
-                                       plotlyOutput("OTOB", height = "800px")),
-                                   tabPanel(
-                                       "Tabela",
-                                       dataTableOutput("TABLEOB"))
-                               )
-                        )),
+                        fluidPage(
+                            theme = "www/MACROdemo.css",
+#                             tags$style(HTML(".js-irs-0 .irs-single, .js-irs-0 .irs-bar-edge, .js-irs-0 .irs-bar {background: #FFF; top: 17px; width: 2px;
+#     height: 2px;
+#     border: 1px solid #FFF;
+#     background: #DDD;
+#     border-radius: 27px;
+#     -moz-border-radius: 27px;
+#     box-shadow: 1px 1px 3px #FFF;
+#     cursor: pointer;
+# }")),
+                            column(2,
+                                   selectInput(
+                                       inputId = "SOB",
+                                       label = "Série:",
+                                       choices = c("SELIC" = 4390,
+                                                   "CDI" = 4391,
+                                                   "IPCA" = 433,
+                                                   "INPC" = 188),
+                                       selected = "SELIC"
+                                   ),
+                                   br(),
+                                   selectInput("MARKOB", "Marcadores:",
+                                               multiple = T,
+                                               selectize = T,
+                                               c("Média" = "m1",
+                                                 "Mediana" = "m2"),
+                                               selected = c("m1", "m2")),
+                                   br(),
+                                   sliderInput(
+                                       inputId = "SLDOB",
+                                       label = "Período da série:",
+                                       value = c(164, 392), min = 1 , max = 500, step = 1
+                                   ),
+                                   br(),
+                                   tableOutput("PIFOB")
+                            ),
+                            column(10,
+                                   tabsetPanel(
+                                       tabPanel(
+                                           "Gráfico de linha",
+                                           plotlyOutput("GLOB", height = "800px")),
+                                       tabPanel(
+                                           "Gráfico de linhas",
+                                           plotlyOutput("GLOBS", height = "800px")),
+                                       tabPanel(
+                                           "OUTROS",
+                                           plotlyOutput("OTOB", height = "800px")),
+                                       tabPanel(
+                                           "Tabela",
+                                           dataTableOutput("TABLEOB"))
+                                   )
+                            ))
+                        ),
                tabPanel("Quiz"),
                tabPanel("Sobre",
                         br(),
@@ -228,24 +259,44 @@ server <- function(input, output) {
         
         dfISLM <- data.frame(ISii_1, LMii_1, y, ISii_2, LMii_2)
         
-        M1coef <- matrix(c(((1-input$ISLMc1_1*(1-input$ISLMt_1))/input$ISLMa_1),
-                           (1/input$ISLMl1_1)*(1/input$ISLMvt_1),
+        # coef(lm(ISii_1 ~ y))[[2]] X + 1Y = coef(lm(ISii_1 ~ y))[[1]]
+        # coef(lm(LMii_1 ~ y))[[2]] X + 1Y = coef(lm(LMii_1 ~ y))[[1]]
+
+        M1coef_1 <- matrix(c(coef(lm(ISii_1 ~ y))[[2]],
                            1,
+                           coef(lm(LMii_1 ~ y))[[2]],
                            1),
+                         nrow = 2,
+                         byrow = T)
+        
+        M1cons_1 <- matrix(c(coef(lm(ISii_1 ~ y))[[1]],
+                           coef(lm(LMii_1 ~ y))[[1]]),
                          nrow = 2)
         
-        M1cons <- matrix(c(((input$ISLMc0_1 - (input$ISLMc1_1*input$ISLMT0_1) + input$ISLMI0_1 + input$ISLMG0_1) / input$ISLMa_1),
-                           (1/input$ISLMl1_1)*(input$ISLMl0_1-input$ISLMms0p_1)),
-                         nrow = 2)
+        M1coef_2 <- matrix(c(coef(lm(ISii_2 ~ y))[[2]],
+                             1,
+                             coef(lm(LMii_2 ~ y))[[2]],
+                             1),
+                           nrow = 2,
+                           byrow = T)
+        
+        M1cons_2 <- matrix(c(coef(lm(ISii_2 ~ y))[[1]],
+                             coef(lm(LMii_2 ~ y))[[1]]),
+                           nrow = 2)
         
         ggplot(dfISLM)+
             geom_line(aes(x = dfISLM$y, y = dfISLM$ISii_2), size =1.3, color = "#949494")+
             geom_line(aes(x = dfISLM$y, y = dfISLM$LMii_2), size =1.3, color = "#949494")+
             geom_line(aes(x = dfISLM$y, y = dfISLM$ISii_1), size =1.3)+
             geom_line(aes(x = dfISLM$y, y = dfISLM$LMii_1), size =1.3)+
-            geom_segment(aes(x = solve(M1coef, M1cons)[2], xend = solve(M1coef, M1cons)[2], y = 0, yend = solve(M1coef, M1cons)[1]), linetype = 2)+
-            geom_text(aes(x = 250, y = 5000, label = paste(solve(M1coef, M1cons)[2])), size = 6)+
-            geom_text(aes(x = 250, y = 6000, label = paste(solve(M1coef, M1cons)[1])), size = 6)+
+            geom_segment(aes(x = -solve(M1coef_2, M1cons_2)[1], xend = -solve(M1coef_2, M1cons_2)[1], y = 0, yend = solve(M1coef_2, M1cons_2)[2]), linetype = 2, color = "#949494")+
+            geom_segment(aes(x = 0, xend = -solve(M1coef_2, M1cons_2)[1], y = solve(M1coef_2, M1cons_2)[2], yend = solve(M1coef_2, M1cons_2)[2]), linetype = 2, color = "#949494")+
+            geom_segment(aes(x = -solve(M1coef_1, M1cons_1)[1], xend = -solve(M1coef_1, M1cons_1)[1], y = 0, yend = solve(M1coef_1, M1cons_1)[2]), linetype = 2)+
+            geom_segment(aes(x = 0, xend = -solve(M1coef_1, M1cons_1)[1], y = solve(M1coef_1, M1cons_1)[2], yend = solve(M1coef_1, M1cons_1)[2]), linetype = 2)+
+            geom_point(aes(x = -solve(M1coef_2, M1cons_2)[1], y = solve(M1coef_2, M1cons_2)[2]), size = 6, color = "#949494")+
+            geom_point(aes(x = -solve(M1coef_1, M1cons_1)[1], y = solve(M1coef_1, M1cons_1)[2]), size = 6)+
+            geom_segment(aes(x = 0, xend = 0, y = solve(M1coef_1, M1cons_1)[2], yend = solve(M1coef_2, M1cons_2)[2]), size = 1.3)+
+            geom_segment(aes(x = -solve(M1coef_1, M1cons_1)[1], xend = -solve(M1coef_2, M1cons_2)[1], y = 0, yend = 0), size = 1.3)+
             geom_hline(yintercept = 0)+
             geom_vline(xintercept = 0)+
             labs(title = "IS - LM",

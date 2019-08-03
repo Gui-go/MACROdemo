@@ -62,8 +62,7 @@ ui <- dashboardPage(
   dashboardBody(
     
 
-    includeCSS("www/MACROdemo.css"),
-
+    tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "MACROdemo.css")),
     tabItems(
       
       # Home --------------------------------------------------------------------
